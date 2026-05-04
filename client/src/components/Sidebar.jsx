@@ -8,10 +8,13 @@ import {
   BarChart3, 
   Calendar, 
   Settings,
-  GraduationCap
+  GraduationCap,
+  ShieldCheck
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const Sidebar = () => {
+  const { user } = useAuth();
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Profile Analyzer', path: '/upload', icon: UserCircle },
@@ -20,6 +23,10 @@ const Sidebar = () => {
     { name: 'Analytics', path: '/analytics', icon: BarChart3 },
     { name: 'Study Planner', path: '/planner', icon: Calendar },
   ];
+
+  if (user && user.role === 'admin') {
+    navItems.push({ name: 'Admin', path: '/admin', icon: ShieldCheck });
+  }
 
   return (
     <aside className="w-64 min-h-[calc(100vh-64px)] bg-[#0B0D19] border-r border-white/5 p-4 sticky top-16 hidden lg:block">

@@ -14,11 +14,19 @@ import LearningPath from './pages/LearningPath';
 import Mentor from './pages/Mentor';
 import Analytics from './pages/Analytics';
 import Planner from './pages/Planner';
+import AdminDashboard from './pages/AdminDashboard';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return null;
   if (!user) return <Navigate to="/login" />;
+  return children;
+};
+
+const AdminRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user || user.role !== 'admin') return <Navigate to="/dashboard" />;
   return children;
 };
 
@@ -49,6 +57,7 @@ function App() {
             <Route path="/mentor" element={<ProtectedRoute><Mentor /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
             <Route path="/planner" element={<ProtectedRoute><Planner /></ProtectedRoute>} />
+            <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           </Routes>
         </main>
       </div>
