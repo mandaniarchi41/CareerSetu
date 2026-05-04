@@ -3,8 +3,9 @@ const LearningPath = require('../models/LearningPath');
 const Progress = require('../models/Progress');
 const { skillGapAnalysisPrompt, generateLearningPathPrompt, careerRecommendationEnginePrompt } = require('../utils/openai');
 const pdfParse = require('pdf-parse');
-const { Hercai } = require('hercai');
-const herc = new Hercai({});
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 exports.analyzeProfile = async (req, res) => {
   try {
@@ -141,22 +142,20 @@ exports.chat = async (req, res) => {
     const context = `You are a senior career mentor. User Goal: ${learningPath.goal}. `;
     const fullPrompt = context + "User asks: " + message;
 
-    // Fetch Real-time AI response with rotation
+    // Fetch Real-time AI response with Gemini
     let finalReply;
-    const models = ["v3", "llama3", "turbo"];
     let success = false;
 
-    for (const model of models) {
-      try {
-        const response = await herc.chat.completions.create({ model: model, content: fullPrompt });
-        if (response && response.reply) {
-          finalReply = response.reply;
-          success = true;
-          break;
-        }
-      } catch (apiErr) {
-        continue;
+    try {
+      const result = await model.generateContent(fullPrompt);
+      const response = await result.response;
+      const text = response.text();
+      if (text) {
+        finalReply = text;
+        success = true;
       }
+    } catch (apiErr) {
+      console.error("Gemini Error:", apiErr.message);
     }
 
     if (!success) {

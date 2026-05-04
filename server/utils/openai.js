@@ -1,5 +1,6 @@
-const { Hercai } = require('hercai');
-const herc = new Hercai({});
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 // ── JSON extractor ─────────────────────────────────────────────────────────
 const extractJSON = (text) => {
@@ -50,19 +51,18 @@ const ensureYouTubeResources = (roadmapData, goal) => {
 exports.youtubeSearchUrl = (topic) =>
   `https://www.youtube.com/results?search_query=${encodeURIComponent(topic).replace(/%20/g, '+')}`;
 
-// ── AI caller with model fallback chain ───────────────────────────────────
+// ── AI caller with Gemini ───────────────────────────────────
 const askAI = async (prompt) => {
-  const models = ['v3', 'llama3', 'turbo'];
-  for (const model of models) {
-    try {
-      console.log(`Asking Hercai AI (${model})...`);
-      const response = await herc.chat.completions.create({ model, content: prompt });
-      if (response && response.reply && response.reply.trim().length > 20) {
-        return response.reply;
-      }
-    } catch (err) {
-      console.error(`Model ${model} failed, trying next...`);
+  try {
+    console.log(`Asking Gemini AI...`);
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    if (text && text.trim().length > 20) {
+      return text;
     }
+  } catch (err) {
+    console.error(`Gemini AI failed:`, err.message);
   }
   throw new Error('All AI models failed');
 };
