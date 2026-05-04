@@ -645,3 +645,34 @@ Return strictly a JSON object (if data is sufficient) with the exact structure b
     };
   }
 };
+
+exports.generateDailyTasksPrompt = async (date, goal = 'Professional Growth') => {
+  const prompt = `
+You are an expert career and study planner AI. Generate a realistic and structured daily study/work plan for the date: ${date}, focusing on achieving the goal: "${goal}".
+Create 3 to 5 tasks for the day. Make them practical, engaging, and diverse.
+The types of tasks allowed are strictly: "Study", "Code", "Review", "Test".
+
+Return STRICT JSON ONLY:
+{
+  "tasks": [
+    {
+      "title": "Task title",
+      "type": "Study" | "Code" | "Review" | "Test",
+      "time": "HH:MM AM/PM"
+    }
+  ]
+}
+`;
+  try {
+    const reply = await askAI(prompt);
+    const parsed = extractJSON(reply);
+    return parsed.tasks || [];
+  } catch (err) {
+    console.warn('Daily task generation AI failed. Using fallback...');
+    return [
+      { title: 'Morning Review', type: 'Review', time: '09:00 AM' },
+      { title: 'Deep Work Session', type: 'Code', time: '11:00 AM' },
+      { title: 'Learn New Concepts', type: 'Study', time: '02:00 PM' }
+    ];
+  }
+};

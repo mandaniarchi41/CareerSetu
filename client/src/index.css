@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
 @theme {
   --color-primary: #3b82f6; /* blue-500 */
   --color-secondary: #8b5cf6; /* violet-500 */
@@ -12,8 +14,7 @@ html {
 }
 
 body {
-  background-color: var(--color-dark);
-  color: white;
+  @apply bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-white transition-colors duration-300;
   font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }

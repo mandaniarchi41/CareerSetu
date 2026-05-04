@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -8,6 +8,13 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const notifications = [
+    { id: 1, text: 'Your learning path was auto-generated!', time: '2m ago' },
+    { id: 2, text: 'You have a study session at 2:00 PM', time: '1h ago' },
+    { id: 3, text: 'Awesome work! You reached your weekly goal.', time: '1d ago' },
+  ];
 
   const handleLogout = () => {
     logout();
@@ -44,10 +51,35 @@ const Navbar = () => {
           {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
         </button>
 
-        <button className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 relative">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
-        </button>
+        <div className="relative">
+          <button 
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 relative transition-colors"
+          >
+            <Bell className="w-5 h-5" />
+            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
+          </button>
+
+          {showNotifications && (
+            <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden z-50">
+              <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+                <h3 className="font-bold text-slate-800 dark:text-slate-100">Notifications</h3>
+                <span className="text-xs font-bold bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-1 rounded-full">{notifications.length} New</span>
+              </div>
+              <div className="max-h-80 overflow-y-auto">
+                {notifications.map(n => (
+                  <div key={n.id} className="p-4 border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors">
+                    <p className="text-sm text-slate-700 dark:text-slate-300">{n.text}</p>
+                    <span className="text-xs text-slate-400 mt-1 block font-medium">{n.time}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="p-3 text-center border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">
+                <span className="text-sm font-bold text-blue-600 dark:text-blue-400">Mark all as read</span>
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-800 mx-2"></div>
 
