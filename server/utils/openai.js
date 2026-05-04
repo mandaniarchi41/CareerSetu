@@ -53,7 +53,11 @@ exports.youtubeSearchUrl = (topic) =>
 
 // ── AI caller with Gemini fallback ───────────────────────────────────
 const askAI = async (prompt) => {
-  const modelsToTry = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash-lite"];
+  const modelsToTry = [
+    "gemini-2.5-flash", "gemini-flash-latest", "gemini-2.0-flash", 
+    "gemini-2.5-flash-lite", "gemini-2.0-flash-lite", 
+    "gemini-2.5-pro", "gemini-pro-latest", "gemini-1.5-flash"
+  ];
   for (const modelName of modelsToTry) {
     try {
       console.log(`Asking Gemini AI (${modelName})...`);
@@ -66,7 +70,8 @@ const askAI = async (prompt) => {
       }
     } catch (err) {
       console.error(`Gemini AI (${modelName}) failed:`, err.message);
-      if (err.message.includes('429') || err.message.includes('quota') || err.message.includes('retry') || err.message.includes('unavailable')) {
+      const msg = err.message.toLowerCase();
+      if (msg.includes('429') || msg.includes('quota') || msg.includes('retry') || msg.includes('unavailable') || msg.includes('overloaded')) {
          continue; 
       }
     }

@@ -145,7 +145,11 @@ exports.chat = async (req, res) => {
     // Fetch Real-time AI response with Gemini fallback models
     let finalReply;
     let success = false;
-    const modelsToTry = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash-lite"];
+    const modelsToTry = [
+      "gemini-2.5-flash", "gemini-flash-latest", "gemini-2.0-flash", 
+      "gemini-2.5-flash-lite", "gemini-2.0-flash-lite", 
+      "gemini-2.5-pro", "gemini-pro-latest", "gemini-1.5-flash"
+    ];
 
     for (const modelName of modelsToTry) {
       try {
@@ -160,7 +164,8 @@ exports.chat = async (req, res) => {
         }
       } catch (apiErr) {
         console.error(`Gemini Error (${modelName}):`, apiErr.message);
-        if (apiErr.message.includes('429') || apiErr.message.includes('quota') || apiErr.message.includes('retry')) {
+        const msg = apiErr.message.toLowerCase();
+        if (msg.includes('429') || msg.includes('quota') || msg.includes('retry') || msg.includes('unavailable') || msg.includes('overloaded')) {
            continue; // Try next model on rate limit
         }
       }
