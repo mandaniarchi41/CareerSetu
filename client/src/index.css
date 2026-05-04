@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #3b82f6; /* blue-500 */
+  --color-secondary: #8b5cf6; /* violet-500 */
+  --color-dark: #0f172a; /* slate-900 */
+}
+
+html {
+  /* Scale down base rem size to achieve compact UI without shrinking the viewport box */
+  font-size: 67%;
+}
+
+body {
+  background-color: var(--color-dark);
+  color: white;
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
