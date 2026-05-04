@@ -65,19 +65,48 @@ exports.analyzeLinkedIn = async (req, res) => {
     const usernameMatch = url.match(/linkedin\.com\/in\/([^/?]+)/i);
     const username = usernameMatch ? usernameMatch[1].replace(/-/g, ' ') : 'the candidate';
 
-    // Since we cannot scrape LinkedIn, we ask the AI to generate an estimated profile
-    // based on the username pattern. User can then adjust levels in SkillReview.
-    const pseudoText = `
-LinkedIn Professional Profile
-Name/Handle: ${username}
-URL: ${url}
-This professional is on LinkedIn. Based on their profile handle and typical LinkedIn profiles
-for software professionals, infer a realistic set of technical skills and experience.
-Provide realistic skill levels between 50-85 for a working professional.
-Include a mix of programming languages, frameworks, and tools typical for their apparent specialization.
-    `;
+    // Try to fetch actual public LinkedIn page data
+    let profileText = '';
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5'
+        }
+      });
+      if (response.ok) {
+        const html = await response.text();
+        // Remove scripts and styles, strip html tags to get basic text content
+        profileText = html
+          .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+          .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        // Limit text to avoid token limits
+        if (profileText.length > 15000) profileText = profileText.substring(0, 15000);
+      }
+    } catch (e) {
+      console.log('Failed to fetch LinkedIn profile natively:', e.message);
+    }
 
-    const extractedData = await extractSkillsPrompt(pseudoText);
+    let extractionContext = '';
+    if (profileText && profileText.length > 200) {
+      extractionContext = `
+LinkedIn Profile Data:
+${profileText}
+Extract the user's technical skills, experience, and education from this text.
+      `;
+    } else {
+      extractionContext = `
+LinkedIn Professional Profile Name/Handle: ${username}
+URL: ${url}
+(Unable to fetch real data) Based on this profile handle, infer a realistic set of technical skills and experience for a software professional.
+      `;
+    }
+
+    const extractedData = await extractSkillsPrompt(extractionContext);
 
     let formattedSkills = [];
     if (extractedData.skills && Array.isArray(extractedData.skills)) {
