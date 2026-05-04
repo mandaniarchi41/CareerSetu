@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { motion } from 'framer-motion';
-import { Calendar as CalendarIcon, Clock, CheckCircle2, ChevronLeft, ChevronRight, Plus, Sparkles } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, CheckCircle2, ChevronLeft, ChevronRight, Plus, Sparkles, X } from 'lucide-react';
 
 const Planner = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [newTaskData, setNewTaskData] = useState({ title: '', type: 'Study', time: '09:00' });
   
   useEffect(() => {
     const fetchTasks = async () => {
@@ -35,15 +37,42 @@ const Planner = () => {
     }
   };
 
-  const addTask = async () => {
-    const title = prompt("Enter task title:");
-    if (!title) return;
+  const handleAddTaskSubmit = async (e) => {
+    e.preventDefault();
+    if (!newTaskData.title) return;
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     try {
-      const res = await api.post('/planner/add', { date: dateStr, title, type: 'Study', time: '10:00 AM' });
+      // Format time as AM/PM
+      let [hours, minutes] = newTaskData.time.split(':');
+      hours = parseInt(hours);
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12 || 12;
+      const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+      
+      const res = await api.post('/planner/add', { 
+        date: dateStr, 
+        title: newTaskData.title, 
+        type: newTaskData.type, 
+        time: formattedTime 
+      });
       setTasks(res.data.tasks);
+      setShowTaskModal(false);
+      setNewTaskData({ title: '', type: 'Study', time: '09:00' });
     } catch (err) {
       console.error("Error adding task");
+    }
+  };
+
+  const handleAutoGenerate = async () => {
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    setLoading(true);
+    try {
+      const res = await api.post('/planner/generate', { date: dateStr });
+      setTasks(res.data.tasks);
+    } catch (err) {
+      console.error("Error generating tasks");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -57,7 +86,7 @@ const Planner = () => {
           <h1 className="text-3xl font-bold">Study Planner</h1>
           <p className="text-slate-500 dark:text-slate-400">Your personalized daily learning schedule.</p>
         </div>
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-blue-500/30 flex items-center gap-2 transition-all">
+        <button onClick={handleAutoGenerate} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-blue-500/30 flex items-center gap-2 transition-all">
           <Sparkles className="w-5 h-5" />
           Auto-Generate Day
         </button>
@@ -111,7 +140,7 @@ const Planner = () => {
           <div className="space-y-4">
             <div className="flex justify-between items-center px-2">
               <h4 className="font-bold">Timeline: {format(selectedDate, 'EEEE, MMM do')}</h4>
-              <button onClick={addTask} className="text-blue-600 hover:underline text-sm font-bold flex items-center gap-1">
+              <button onClick={() => setShowTaskModal(true)} className="text-blue-600 hover:underline text-sm font-bold flex items-center gap-1">
                 <Plus className="w-4 h-4" /> Add Task
               </button>
             </div>
@@ -209,6 +238,69 @@ const Planner = () => {
           </div>
         </div>
       </div>
+
+      {/* Add Task Modal */}
+      {showTaskModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-md border border-slate-200 dark:border-slate-800 shadow-2xl"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white">Add New Task</h3>
+              <button onClick={() => setShowTaskModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleAddTaskSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Task Title</label>
+                <input 
+                  type="text" 
+                  required
+                  value={newTaskData.title}
+                  onChange={(e) => setNewTaskData({...newTaskData, title: e.target.value})}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-slate-800 dark:text-slate-100"
+                  placeholder="e.g. Complete React tutorial"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Time</label>
+                  <input 
+                    type="time" 
+                    required
+                    value={newTaskData.time}
+                    onChange={(e) => setNewTaskData({...newTaskData, time: e.target.value})}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-slate-800 dark:text-slate-100"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Type</label>
+                  <select 
+                    value={newTaskData.type}
+                    onChange={(e) => setNewTaskData({...newTaskData, type: e.target.value})}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-slate-800 dark:text-slate-100 appearance-none"
+                  >
+                    <option value="Study">Study</option>
+                    <option value="Code">Code</option>
+                    <option value="Review">Review</option>
+                    <option value="Test">Test</option>
+                  </select>
+                </div>
+              </div>
+              
+              <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl mt-6 transition-colors shadow-lg shadow-blue-500/30">
+                Add Task
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

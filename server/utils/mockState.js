@@ -39,6 +39,12 @@ exports.updateMockPlanner = (userId, date, taskId, data) => {
   return plan;
 };
 
+exports.overwriteMockPlanner = (userId, date, tasks) => {
+  const key = `${userId}_${date}`;
+  mockPlanner[key] = { userId, date, tasks };
+  return mockPlanner[key];
+};
+
 exports.savePathToHistory = (userId, path) => {
   if (!mockPathHistory[userId]) mockPathHistory[userId] = [];
   // Only add if not already in history (basic check by goal)
