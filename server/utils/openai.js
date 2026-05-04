@@ -51,18 +51,25 @@ const ensureYouTubeResources = (roadmapData, goal) => {
 exports.youtubeSearchUrl = (topic) =>
   `https://www.youtube.com/results?search_query=${encodeURIComponent(topic).replace(/%20/g, '+')}`;
 
-// ── AI caller with Gemini ───────────────────────────────────
+// ── AI caller with Gemini fallback ───────────────────────────────────
 const askAI = async (prompt) => {
-  try {
-    console.log(`Asking Gemini AI...`);
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    if (text && text.trim().length > 20) {
-      return text;
+  const modelsToTry = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash-lite"];
+  for (const modelName of modelsToTry) {
+    try {
+      console.log(`Asking Gemini AI (${modelName})...`);
+      const tempModel = genAI.getGenerativeModel({ model: modelName });
+      const result = await tempModel.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      if (text && text.trim().length > 20) {
+        return text;
+      }
+    } catch (err) {
+      console.error(`Gemini AI (${modelName}) failed:`, err.message);
+      if (err.message.includes('429') || err.message.includes('quota') || err.message.includes('retry') || err.message.includes('unavailable')) {
+         continue; 
+      }
     }
-  } catch (err) {
-    console.error(`Gemini AI failed:`, err.message);
   }
   throw new Error('All AI models failed');
 };

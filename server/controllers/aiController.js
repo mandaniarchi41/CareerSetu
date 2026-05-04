@@ -142,20 +142,28 @@ exports.chat = async (req, res) => {
     const context = `You are a senior career mentor. User Goal: ${learningPath.goal}. `;
     const fullPrompt = context + "User asks: " + message;
 
-    // Fetch Real-time AI response with Gemini
+    // Fetch Real-time AI response with Gemini fallback models
     let finalReply;
     let success = false;
+    const modelsToTry = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash-lite"];
 
-    try {
-      const result = await model.generateContent(fullPrompt);
-      const response = await result.response;
-      const text = response.text();
-      if (text) {
-        finalReply = text;
-        success = true;
+    for (const modelName of modelsToTry) {
+      try {
+        const tempModel = genAI.getGenerativeModel({ model: modelName });
+        const result = await tempModel.generateContent(fullPrompt);
+        const response = await result.response;
+        const text = response.text();
+        if (text) {
+          finalReply = text;
+          success = true;
+          break;
+        }
+      } catch (apiErr) {
+        console.error(`Gemini Error (${modelName}):`, apiErr.message);
+        if (apiErr.message.includes('429') || apiErr.message.includes('quota') || apiErr.message.includes('retry')) {
+           continue; // Try next model on rate limit
+        }
       }
-    } catch (apiErr) {
-      console.error("Gemini Error:", apiErr.message);
     }
 
     if (!success) {
